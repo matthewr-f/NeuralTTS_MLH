@@ -278,4 +278,195 @@ footer {
     .audio-settings {
         grid-template-columns: 1fr;
     }
+
+
+
+
+
+
+
+    :root {
+        --book-w: 820px;        /* total width of book */
+        --book-h: 520px;        /* height */
+        --page-w: calc(var(--book-w) / 2);
+        --paper: #fff;
+        --ink: #222;
+        --bg: #f6f5f3;
+        --shadow: 0 10px 28px rgba(0,0,0,.18);
+        --accent: #4b2e2b;      /* right-side accent background */
+      }
+      
+      /* General reset */
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+        line-height: 1.5;
+      }
+      
+      /* Flipbook wrapper */
+      .flipbook {
+        position: relative;
+        width: min(100%, var(--book-w));
+        height: var(--book-h);
+        margin: 24px auto;
+        perspective: 2000px;
+        border-radius: 12px;
+      }
+      .flipbook::before,
+      .flipbook::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+      }
+      .flipbook::before {
+        background: linear-gradient(90deg, #fff 50%, var(--accent) 50%);
+      }
+      .flipbook::after {
+        box-shadow: inset 0 0 90px rgba(0,0,0,.12);
+      }
+      
+      .book {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+      }
+      
+      /* Each sheet */
+      .page {
+        position: absolute;
+        top: 0;
+        width: var(--page-w);
+        height: 100%;
+        background: var(--paper);
+        box-shadow: var(--shadow);
+        transform-origin: left center;
+        transition: transform .8s cubic-bezier(.2,.7,.1,1), box-shadow .8s;
+        border-radius: 8px 0 0 8px;
+        overflow: hidden;
+      }
+      .page.right {
+        left: var(--page-w);
+        transform-origin: right center;
+        border-radius: 0 8px 8px 0;
+      }
+      
+      /* Stacking */
+      .page[data-p="1"] { z-index: 6; }
+      .page[data-p="2"] { z-index: 5; }
+      .page[data-p="3"] { z-index: 4; }
+      .page[data-p="4"] { z-index: 3; }
+      .page[data-p="5"] { z-index: 2; }
+      
+      /* Faces */
+      .face {
+        position: absolute;
+        inset: 0;
+        backface-visibility: hidden;
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* left and right panes */
+      }
+      .face.back { transform: rotateY(180deg); }
+      
+      /* Text panes */
+      .pane {
+        padding: 28px 32px;
+        overflow: auto;
+      }
+      .pane h4 {
+        margin: 0 0 .5rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+      }
+      .pane p {
+        margin: 0 0 .75rem;
+        font-size: .95rem;
+        color: #333;
+      }
+      
+      /* Page edge shading */
+      .edge {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: -1px;
+        width: 12px;
+        background: linear-gradient(90deg, rgba(0,0,0,.08), transparent);
+        pointer-events: none;
+      }
+      .page.right .edge {
+        left: -1px;
+        right: auto;
+        background: linear-gradient(270deg, rgba(0,0,0,.08), transparent);
+      }
+      
+      /* Hide the radio inputs */
+      .flipbook input[type="radio"] { display: none; }
+      
+      /* Flip logic: when pN checked, flip all pages <= N */
+      #p1:checked ~ .book .page[data-p="1"] {
+        transform: rotateY(-180deg);
+        box-shadow: -8px 8px 24px rgba(0,0,0,.18);
+      }
+      #p2:checked ~ .book .page[data-p="1"],
+      #p2:checked ~ .book .page[data-p="2"] {
+        transform: rotateY(-180deg);
+        box-shadow: -8px 8px 24px rgba(0,0,0,.18);
+      }
+      #p3:checked ~ .book .page[data-p="1"],
+      #p3:checked ~ .book .page[data-p="2"],
+      #p3:checked ~ .book .page[data-p="3"] {
+        transform: rotateY(-180deg);
+        box-shadow: -8px 8px 24px rgba(0,0,0,.18);
+      }
+      #p4:checked ~ .book .page[data-p="1"],
+      #p4:checked ~ .book .page[data-p="2"],
+      #p4:checked ~ .book .page[data-p="3"],
+      #p4:checked ~ .book .page[data-p="4"] {
+        transform: rotateY(-180deg);
+        box-shadow: -8px 8px 24px rgba(0,0,0,.18);
+      }
+      #p5:checked ~ .book .page[data-p="1"],
+      #p5:checked ~ .book .page[data-p="2"],
+      #p5:checked ~ .book .page[data-p="3"],
+      #p5:checked ~ .book .page[data-p="4"],
+      #p5:checked ~ .book .page[data-p="5"] {
+        transform: rotateY(-180deg);
+        box-shadow: -8px 8px 24px rgba(0,0,0,.18);
+      }
+      
+      /* Navigation buttons */
+      .nav {
+        position: absolute;
+        bottom: 16px;
+        right: 18px;
+        display: flex;
+        gap: 8px;
+      }
+      .btn {
+        cursor: pointer;
+        border: 0;
+        border-radius: 999px;
+        padding: .6rem .9rem;
+        background: #111;
+        color: #fff;
+        font-size: .85rem;
+        box-shadow: 0 6px 14px rgba(0,0,0,.15);
+        user-select: none;
+      }
+      .btn:active { transform: translateY(1px) scale(.98); }
+      
+      /* Responsive */
+      @media (max-width: 900px) {
+        :root { --book-w: 680px; --book-h: 460px; }
+      }
+      @media (max-width: 720px) {
+        :root { --book-w: 92vw; --book-h: 70vh; }
+        .face { grid-template-columns: 1fr; } /* stack left & right vertically */
+      }
 }
+
