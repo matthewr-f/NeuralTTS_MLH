@@ -11,27 +11,160 @@
 <body>
     <div class="container">
         <header>
-            <h1>📚 TTS PDF Reader</h1>
+            <h1>📚 Welcome to the Text Reader </h1>
             <p>Upload a PDF and listen to it being read aloud</p>
         </header>
 
         <main>
-            <div class="upload-section">
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-content">
-                        <div class="upload-icon">📄</div>
-                        <h3>Drop your PDF here</h3>
-                        <p>or click to browse</p>
-                        <input type="file" id="pdfInput" accept=".pdf" hidden>
-                    </div>
-                </div>
-            </div>
 
-            <div class="controls-section" id="controlsSection" style="display: none;">
-                <div class="text-preview">
-                    <h3>Extracted Text Preview</h3>
-                    <div class="text-content" id="textContent"></div>
+            <section class="flipbook" aria-label="Flipbook">
+                <!-- Flip state radios -->
+                <input type="radio" name="page" id="p0" checked hidden>
+                <input type="radio" name="page" id="p1" hidden>
+                <input type="radio" name="page" id="p2" hidden>
+                <input type="radio" name="page" id="p3" hidden>
+                <input type="radio" name="page" id="p4" hidden>
+                <input type="radio" name="page" id="p5" hidden>
+              
+                <div class="book">
+                  <!-- Page 1 -->
+                  <article class="page right" data-p="1" aria-label="Page 1">
+                    <!-- Front (right-hand page when closed) -->
+                    <div class="face front">
+                      <div class="pane left">
+                        <h4>Chapter 1</h4>
+                        <p>Left pane text for the front of Page 1. Replace with your extracted content.</p>
+                      </div>
+                      <div class="pane right">
+                        <h4>Introduction</h4>
+                        <p>Right pane text for the front of Page 1. Add any additional paragraphs here.</p>
+                      </div>
+                    </div>
+                    <!-- Back -->
+                    <div class="face back">
+                      <div class="pane left">
+                        <h4>Notes</h4>
+                        <p>Left pane text for the back of Page 1.</p>
+                      </div>
+                      <div class="pane right">
+                        <h4>More Notes</h4>
+                        <p>Right pane text for the back of Page 1.</p>
+                      </div>
+                    </div>
+                    <span class="edge"></span>
+                  </article>
+              
+                  <!-- Page 2 -->
+                  <article class="page right" data-p="2" aria-label="Page 2">
+                    <div class="face front">
+                      <div class="pane left">
+                        <h4>Chapter 2</h4>
+                        <p>Left pane text for the front of Page 2.</p>
+                      </div>
+                      <div class="pane right">
+                        <h4>Parsing Text</h4>
+                        <p>Right pane text for the front of Page 2.</p>
+                      </div>
+                    </div>
+                    <div class="face back">
+                      <div class="pane left">
+                        <h4>Examples</h4>
+                        <p>Left pane text for the back of Page 2.</p>
+                      </div>
+                      <div class="pane right">
+                        <h4>Continuation</h4>
+                        <p>Right pane text for the back of Page 2.</p>
+                      </div>
+                    </div>
+                    <span class="edge"></span>
+                  </article>
+              
+                  <!-- Page 3 -->
+                  <article class="page right" data-p="3" aria-label="Page 3">
+                    <div class="face front">
+                      <div class="pane left">
+                        <h4>Chapter 3</h4>
+                        <p>Left pane text for the front of Page 3.</p>
+                      </div>
+                      <div class="pane right">
+                        <h4>Playback</h4>
+                        <p>Right pane text for the front of Page 3.</p>
+                      </div>
+                    </div>
+                    <div class="face back">
+                      <div class="pane left">
+                        <h4>Tips</h4>
+                        <p>Left pane text for the back of Page 3.</p>
+                      </div>
+                      <div class="pane right">
+                        <h4>More Tips</h4>
+                        <p>Right pane text for the back of Page 3.</p>
+                      </div>
+                    </div>
+                    <span class="edge"></span>
+                  </article>
+              
+                  <!-- Page 4 (already-flipped stack on left) -->
+                  <article class="page" data-p="4" aria-label="Page 4">
+                    <div class="face front">
+                      <div class="pane left">
+                        <h4>Appendix A</h4>
+                        <p>Left pane text for the front of Page 4.</p>
+                      </div>
+                      <div class="pane right">
+                        <h4>Appendix A (cont.)</h4>
+                        <p>Right pane text for the front of Page 4.</p>
+                      </div>
+                    </div>
+                    <div class="face back">
+                      <div class="pane left">
+                        <h4>References</h4>
+                        <p>Left pane text for the back of Page 4.</p>
+                      </div>
+                      <div class="pane right">
+                        <h4>More References</h4>
+                        <p>Right pane text for the back of Page 4.</p>
+                      </div>
+                    </div>
+                    <span class="edge"></span>
+                  </article>
+              
+                  <!-- Page 5 -->
+                  <article class="page" data-p="5" aria-label="Page 5">
+                    <div class="face front">
+                      <div class="pane left">
+                        <h4>Credits</h4>
+                        <p>Left pane text for the front of Page 5.</p>
+                      </div>
+                      <div class="pane right">
+                        <h4>Acknowledgments</h4>
+                        <p>Right pane text for the front of Page 5.</p>
+                      </div>
+                    </div>
+                    <div class="face back">
+                      <div class="pane left">
+                        <h4>End</h4>
+                        <p>Left pane text for the back of Page 5.</p>
+                      </div>
+                      <div class="pane right">
+                        <h4>Fin</h4>
+                        <p>Right pane text for the back of Page 5.</p>
+                      </div>
+                    </div>
+                    <span class="edge"></span>
+                  </article>
                 </div>
+              
+                <!-- Navigation (labels target the radios above) -->
+                <div class="nav" aria-label="Flipbook navigation">
+                  <label class="btn" for="p0">Start</label>
+                  <label class="btn" for="p1">Next</label>
+                  <label class="btn" for="p2">Next</label>
+                  <label class="btn" for="p3">Next</label>
+                  <label class="btn" for="p4">Next</label>
+                  <label class="btn" for="p5">Next</label>
+                </div>
+              </section>
 
                 <div class="audio-controls">
                     <h3>Audio Controls</h3>
@@ -88,3 +221,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
