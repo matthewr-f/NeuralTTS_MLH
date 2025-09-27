@@ -1,10 +1,7 @@
 // Google Cloud TTS Configuration
 const TTS_CONFIG = {
-    // Replace with your actual Google Cloud API key
-    apiKey: 'YOUR_GOOGLE_CLOUD_API_KEY_HERE',
-    
-    // TTS API endpoint
-    endpoint: 'https://texttospeech.googleapis.com/v1beta1/text:synthesize',
+    // API key is now handled securely on the backend server
+    // No need to expose it in the frontend
     
     // Default voice settings
     defaultVoice: {
