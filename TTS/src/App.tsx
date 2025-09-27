@@ -1,35 +1,35 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import 'TTS/src/css/navbar.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from 'TTS/src/components/Navbar.tsx;
+import './styles/Navbar.css';
 
-function App() {
-  const [count, setCount] = useState(0)
-
+function Page({ color }: { color: string }) {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div
+      style={{
+        backgroundColor: color,
+        width: '100vw',
+        height: '100vh',
+        paddingTop: 'var(--navbar-height)',
+      }}
+    />
+  );
 }
 
-export default App
+function App() {
+  return (
+    <Router>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Page color="#4281A4" />} />
+        <Route path="/page2" element={<Page color="#48A9A6" />} />
+        <Route path="/page3" element={<Page color="#E4DFDA" />} />
+        <Route path="/page4" element={<Page color="#D4B483" />} />
+        <Route path="/page5" element={<Page color="#C1666B" />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
