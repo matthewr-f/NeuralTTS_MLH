@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import '../styles/Navbar.css';
+import '../css/navbar.css';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -33,11 +33,8 @@ function Navbar() {
     <nav className="navbar">
       <div className="navbar-container">
         <ul className="navbar-menu">
-          <li><Link to="/">Page 1</Link></li>
-          <li><Link to="/page2">Page 2</Link></li>
-          <li><Link to="/page3">Page 3</Link></li>
-          <li><Link to="/page4">Page 4</Link></li>
-          <li><Link to="/page5">Page 5</Link></li>
+          <li><Link to="/">Home</Link></li>
+          <li><Link to="/page2">About</Link></li>
         </ul>
 
         <div className="navbar-action">
@@ -47,8 +44,18 @@ function Navbar() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            📰 Newsletter
+            Login
           </a>
+
+          <a
+            href="https://jamesbuckhouse.substack.com/"
+            className="navbar-newsletter"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Signup
+          </a>
+
         </div>
 
         <div className="navbar-hamburger" onClick={toggleMenu} ref={hamburgerRef}>
@@ -58,11 +65,9 @@ function Navbar() {
         </div>
 
         <ul className={`navbar-mobile-menu ${isOpen ? 'active' : ''}`} ref={menuRef}>
-        <li><Link to="/" onClick={closeMenu}>Page 1</Link></li>
-  <li><Link to="/page2" onClick={closeMenu}>Page 2</Link></li>
-  <li><Link to="/page3" onClick={closeMenu}>Page 3</Link></li>
-  <li><Link to="/page4" onClick={closeMenu}>Page 4</Link></li>
-  <li><Link to="/page5" onClick={closeMenu}>Page 5</Link></li>
+        <li><Link to="/" onClick={closeMenu}>Home</Link></li>
+        <li><Link to="/page2" onClick={closeMenu}>About</Link></li>
+
           <li>
             <a 
               href="https://jamesbuckhouse.substack.com/"
@@ -70,8 +75,18 @@ function Navbar() {
               rel="noopener noreferrer"
               onClick={closeMenu}
             >
-              📰 Newsletter
+                Login
             </a>
+
+            <a 
+              href="https://jamesbuckhouse.substack.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={closeMenu}
+            >
+                Signup
+            </a>
+
           </li>
         </ul>
       </div>

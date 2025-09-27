@@ -1,8 +1,8 @@
 import React from 'react';
-import 'TTS/src/css/navbar.css';
+// import 'TTS/src/css/navbar.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from 'TTS/src/components/Navbar.tsx;
-import './styles/Navbar.css';
+import Navbar from "./components/Navbar.tsx";
+import './css/navbar.css';
 
 function Page({ color }: { color: string }) {
   return (
