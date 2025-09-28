@@ -5,7 +5,6 @@ Run with: python server.py
 """
 
 from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
 import os
 import webbrowser
 import requests
@@ -13,7 +12,14 @@ import json
 from urllib.parse import urlparse
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+
+# Add CORS headers manually
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 # Google Cloud TTS Configuration
 GOOGLE_CLOUD_API_KEY = os.getenv('GOOGLE_CLOUD_API_KEY')
@@ -61,8 +67,7 @@ def synthesize():
             "audioConfig": {
                 "audioEncoding": "LINEAR16",
                 "pitch": pitch,
-                "speakingRate": speaking_rate,
-                "enableTimePointing": ["SSML"]  # Request word timings
+                "speakingRate": speaking_rate
             },
             "input": {
                 "text": text
@@ -86,7 +91,7 @@ def synthesize():
             result = response.json()
             return jsonify({
                 'audioContent': result.get('audioContent'),
-                'timepoints': result.get('timepoints', []),
+                'timepoints': [],  # No timing data available
                 'success': True
             })
         else:
