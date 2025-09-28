@@ -78,6 +78,10 @@ def synthesize():
             }
         }
         
+        # Only add modelName for standard TTS API (not for Vertex AI)
+        if model_name and model_name != "gemini-2.5-pro-preview-tts":
+            tts_request["voice"]["modelName"] = model_name
+        
         # Call Google Cloud TTS API
         response = requests.post(
             f"{TTS_ENDPOINT}?key={GOOGLE_CLOUD_API_KEY}",

@@ -6,19 +6,22 @@ const TTS_CONFIG = {
     // Default voice settings
     defaultVoice: {
         languageCode: 'en-US',
-        modelName: 'gemini-2.5-pro-preview-tts',
-        name: 'Kore'
+        modelName: 'standard',
+        name: 'en-US-Wavenet-A'
     },
     
-    // Available voices
+    // Available voices (standard Google Cloud TTS voices)
     voices: [
-        { name: 'Kore', languageCode: 'en-US', modelName: 'gemini-2.5-pro-preview-tts' },
-        { name: 'en-US-Wavenet-A', languageCode: 'en-US', modelName: 'neural' },
-        { name: 'en-US-Wavenet-B', languageCode: 'en-US', modelName: 'neural' },
-        { name: 'en-US-Wavenet-C', languageCode: 'en-US', modelName: 'neural' },
-        { name: 'en-US-Wavenet-D', languageCode: 'en-US', modelName: 'neural' },
-        { name: 'en-US-Wavenet-E', languageCode: 'en-US', modelName: 'neural' },
-        { name: 'en-US-Wavenet-F', languageCode: 'en-US', modelName: 'neural' }
+        { name: 'en-US-Wavenet-A', languageCode: 'en-US', modelName: 'standard' },
+        { name: 'en-US-Wavenet-B', languageCode: 'en-US', modelName: 'standard' },
+        { name: 'en-US-Wavenet-C', languageCode: 'en-US', modelName: 'standard' },
+        { name: 'en-US-Wavenet-D', languageCode: 'en-US', modelName: 'standard' },
+        { name: 'en-US-Wavenet-E', languageCode: 'en-US', modelName: 'standard' },
+        { name: 'en-US-Wavenet-F', languageCode: 'en-US', modelName: 'standard' },
+        { name: 'en-US-Standard-A', languageCode: 'en-US', modelName: 'standard' },
+        { name: 'en-US-Standard-B', languageCode: 'en-US', modelName: 'standard' },
+        { name: 'en-US-Standard-C', languageCode: 'en-US', modelName: 'standard' },
+        { name: 'en-US-Standard-D', languageCode: 'en-US', modelName: 'standard' }
     ],
     
     // Audio settings
