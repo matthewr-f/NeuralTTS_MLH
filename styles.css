@@ -516,37 +516,38 @@ footer {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;  /* Make overlay match container width */
-    height: 100%; /* Make overlay match container height */
     pointer-events: auto;
     z-index: 2;
+    /* Size will be set dynamically to match canvas exactly */
 }
 
 .word {
     position: absolute;
     cursor: pointer;
     user-select: none;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, border 0.2s ease;
     border-radius: 3px;
-    padding: 1px 2px;
+    
+    /* This is the key: make the text itself invisible */
+    color: transparent; 
 }
 
 .word:hover {
-    background: rgba(102, 126, 234, 0.1);
+    /* Show a subtle hover effect */
+    background: rgba(102, 126, 234, 0.2);
 }
 
 .word.selected {
-    background: rgba(102, 126, 234, 0.3);
+    /* For the click-to-select feature */
+    background: rgba(102, 126, 234, 0.4);
     border: 1px solid #667eea;
 }
 
 .word.highlighted {
-    background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
-    color: #333;
-    font-weight: 600;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    transform: scale(1.05);
-    z-index: 3;
+    /* This is the new highlighting style - a transparent background */
+    background: rgba(255, 215, 0, 0.5); /* Semi-transparent yellow, like a real highlighter */
+    color: transparent; /* Ensure text remains invisible */
+    box-shadow: 0 0 3px rgba(255, 215, 0, 0.3); /* Subtle glow effect */
 }
 
 /* Reading Progress Indicator */

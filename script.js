@@ -490,36 +490,35 @@ class TTSReader {
         const currentPageData = this.pdfPages[this.currentPage];
         const canvas = this.pdfCanvas;
         
-        // Get the viewport to understand the coordinate system
+        // Get the viewport to ensure our coordinate system matches the canvas
         const page = await this.pdfDocument.getPage(this.currentPage + 1);
         const viewport = page.getViewport({ scale: 1.5 });
         
+        // Match the overlay div's size to the canvas's rendered size perfectly
+        this.wordOverlay.style.width = `${canvas.width}px`;
+        this.wordOverlay.style.height = `${canvas.height}px`;
+
         currentPageData.words.forEach(word => {
             const wordElement = document.createElement('span');
             wordElement.className = 'word';
-            wordElement.textContent = word.text;
+            
+            // CRITICAL: Do NOT add the text. Add a non-breaking space 
+            // to ensure the span has a physical dimension to apply a background to.
+            wordElement.innerHTML = '&nbsp;'; 
+            
             wordElement.dataset.wordIndex = word.globalIndex;
-            wordElement.dataset.pageIndex = this.currentPage;
 
-            // Use the PDF's internal coordinates directly, scaled to the canvas size
-            const x = (word.x / viewport.width) * 100;
-            const y = (word.y / viewport.height) * 100;
-            const width = (word.width / viewport.width) * 100;
-            const height = (word.height / viewport.height) * 100;
+            // Translate PDF coordinates to CSS pixels
+            // pdf.js gives coordinates from the bottom-left, CSS uses top-left
+            const x = word.x;
+            const y = word.y; // Already flipped in extractTextWithPositioning
+            const width = word.width;
+            const height = word.height;
 
-            wordElement.style.position = 'absolute';
-            wordElement.style.left = `${x}%`;
-            wordElement.style.top = `${y}%`;
-            wordElement.style.width = `${width}%`;
-            wordElement.style.height = `${height}%`;
-            wordElement.style.fontSize = `${height * 0.8}px`;
-            wordElement.style.lineHeight = `${height}px`;
-            wordElement.style.cursor = 'pointer';
-            wordElement.style.userSelect = 'none';
-            wordElement.style.transition = 'background-color 0.2s ease';
-            wordElement.style.display = 'flex';
-            wordElement.style.alignItems = 'center';
-            wordElement.style.justifyContent = 'flex-start';
+            wordElement.style.left = `${x}px`;
+            wordElement.style.top = `${y}px`;
+            wordElement.style.width = `${width}px`;
+            wordElement.style.height = `${height}px`;
             
             // Add click handler for word selection
             wordElement.addEventListener('click', () => {
