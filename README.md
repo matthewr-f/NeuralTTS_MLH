@@ -17,6 +17,12 @@ A secure web application that converts PDF documents to speech using Google Clou
 - 📖 **Book-like reading experience** - Page-based navigation with text highlighting
 - 🎯 **Dynamic voice selection** - Automatically populated voice list from configuration
 - ⚠️ **Enhanced error handling** - Descriptive error messages instead of silent fallbacks
+- 🖼️ **Full PDF page display** - Shows original PDF pages with precise text overlay
+- ✨ **Real-time word highlighting** - Individual words are highlighted as they're being narrated
+- 🖱️ **Click-to-play words** - Click any word to start reading from that position
+- 📖 **Speechify-like interface** - Professional reading experience with progress tracking
+- 🔍 **OCR functionality** - Extract text from scanned PDFs and images
+- 🌍 **Multi-language OCR** - Support for 10+ languages including English, Spanish, Chinese, etc.
 
 ## Quick Start
 
@@ -101,6 +107,58 @@ The application now provides a modern, book-like reading experience:
 - **🎵 Dynamic Voice List**: Voice options are automatically populated from configuration
 - **⚠️ Smart Error Handling**: Descriptive error messages help users understand issues
 - **📱 Responsive Design**: Optimized for both desktop and mobile devices
+
+## PDF Viewing Features
+
+The application now provides a complete PDF reading experience:
+
+- **🖼️ Full PDF Rendering**: Displays original PDF pages with formatting, images, and layout
+- **📄 Page Navigation**: Navigate through PDF pages with Previous/Next buttons
+- **✨ Real-time Highlighting**: Words are highlighted in real-time as they're being narrated
+- **🎯 Synchronized Playback**: Text highlighting follows the audio playback position
+- **📱 Mobile Optimized**: PDF viewer adapts to different screen sizes
+- **🔍 High Quality**: PDF pages are rendered at 1.5x scale for crisp display
+
+## Speechify-like Reading Experience
+
+The application now provides a professional reading experience similar to Speechify and Narrly:
+
+- **🎯 Individual Word Highlighting**: Each word is positioned precisely over the PDF and can be highlighted
+- **🖱️ Click-to-Play**: Click any word to start reading from that exact position
+- **📊 Reading Progress**: Visual progress bar shows reading completion
+- **🎨 Beautiful UI**: Clean, modern interface with smooth animations
+- **📱 Responsive Design**: Works perfectly on desktop and mobile devices
+- **⚡ Real-time Sync**: Words highlight in perfect sync with audio playback
+- **🎯 Word Selection**: Click to select and highlight individual words
+- **📄 Page Navigation**: Easy navigation between PDF pages
+
+### How the Word Highlighting Works:
+1. **PDF Processing**: Text is extracted with precise positioning data
+2. **Word Overlay**: Individual word elements are positioned over the PDF
+3. **Audio Sync**: TTS audio is synchronized with word positions
+4. **Real-time Highlighting**: Words highlight as they're being spoken
+5. **Interactive**: Users can click words to jump to specific positions
+
+## OCR Features
+
+The application includes powerful OCR capabilities for scanned PDFs:
+
+- **🔍 Tesseract.js Integration**: Uses Google's Tesseract OCR engine in the browser
+- **🌍 Multi-language Support**: Supports 10+ languages including:
+  - English, Spanish, French, German, Italian, Portuguese
+  - Russian, Chinese (Simplified & Traditional), Japanese, Korean
+- **📄 Page-by-page Processing**: OCR processes each PDF page individually
+- **⚡ High Resolution**: Uses 2x scale rendering for better OCR accuracy
+- **🔄 Progress Tracking**: Real-time progress updates during OCR processing
+- **💾 Memory Efficient**: Proper cleanup of OCR workers to prevent memory leaks
+
+### How to Use OCR:
+1. Upload a scanned PDF or image-based PDF
+2. Check "Enable OCR for scanned PDFs"
+3. Select the appropriate language
+4. Click "Process with OCR"
+5. Wait for processing to complete
+6. Generate audio from the extracted text
 
 ## Browser Compatibility
 

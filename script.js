@@ -11,12 +11,33 @@ class TTSReader {
         this.audioChunks = [];
         this.isProcessingChunks = false;
         this.maxChunkSize = 5000; // Maximum characters per chunk
+        this.allWordTimings = [];
         
         // Book-like reading experience
         this.pdfPages = [];
         this.currentPage = 0;
         this.currentReadingPosition = 0;
         this.isReading = false;
+        
+        // PDF rendering
+        this.pdfDocument = null;
+        this.totalPages = 0;
+        this.currentPDFPage = 1;
+        this.pdfCanvas = null;
+        this.pdfContext = null;
+        
+        // Audio highlighting
+        this.audioStartTimes = [];
+        this.currentHighlightPosition = 0;
+        this.wordTimings = [];
+        this.currentWordIndex = 0;
+        
+        // OCR functionality
+        this.useOCR = false;
+        this.ocrLanguage = 'eng';
+        this.ocrWorker = null;
+        this.ocrText = '';
+        this.isProcessingOCR = false;
         
         this.initializeElements();
         this.setupEventListeners();
@@ -151,33 +172,42 @@ class TTSReader {
 
     async processPDF(file) {
         try {
-            this.showProgress('Extracting text from PDF...');
+            this.showProgress('Loading PDF...');
             
             const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            this.pdfDocument = await pdfjsLib.getDocument(arrayBuffer).promise;
+            this.totalPages = this.pdfDocument.numPages;
             
+            // Extract text with positioning data for each page
+            this.pdfPages = [];
+            this.allWords = [];
             let fullText = '';
-            const totalPages = pdf.numPages;
             
-            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-                const page = await pdf.getPage(pageNum);
+            for (let pageNum = 1; pageNum <= this.totalPages; pageNum++) {
+                const page = await this.pdfDocument.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 1.5 });
                 const textContent = await page.getTextContent();
-                const pageText = textContent.items.map(item => item.str).join(' ');
-                fullText += pageText + '\n\n';
+                
+                // Extract text with positioning
+                const pageData = this.extractTextWithPositioning(textContent, viewport, pageNum);
+                this.pdfPages.push(pageData);
+                this.allWords.push(...pageData.words);
+                fullText += pageData.text + '\n\n';
                 
                 // Update progress
-                const progress = (pageNum / totalPages) * 100;
-                this.updateProgress(progress, `Processing page ${pageNum} of ${totalPages}...`);
+                const progress = (pageNum / this.totalPages) * 100;
+                this.updateProgress(progress, `Processing page ${pageNum} of ${this.totalPages}...`);
             }
             
             this.pdfText = fullText.trim();
-            this.createBookPages();
-            this.displayText();
+            this.currentPage = 0;
+            this.displayPDFPages();
             this.hideProgress();
             this.controlsSection.style.display = 'block';
             
-            // Clean up any previous audio chunks when processing new PDF
+            // Clean up any previous audio chunks and OCR worker when processing new PDF
             this.cleanupAudioChunks();
+            await this.cleanupOCRWorker();
             
         } catch (error) {
             console.error('Error processing PDF:', error);
@@ -186,9 +216,37 @@ class TTSReader {
         }
     }
 
-    displayText() {
-        // Show book-like interface instead of plain text
-        this.showBookInterface();
+    extractTextWithPositioning(textContent, viewport, pageNum) {
+        const words = [];
+        let pageText = '';
+        
+        textContent.items.forEach((item, index) => {
+            if (item.str.trim()) {
+                const word = {
+                    text: item.str,
+                    x: item.transform[4],
+                    y: viewport.height - item.transform[5], // Flip Y coordinate
+                    width: item.width,
+                    height: item.height,
+                    pageNum: pageNum,
+                    wordIndex: words.length,
+                    globalIndex: this.allWords.length + words.length
+                };
+                words.push(word);
+                pageText += item.str + ' ';
+            }
+        });
+        
+        return {
+            text: pageText.trim(),
+            words: words,
+            pageNum: pageNum
+        };
+    }
+
+    displayPDFPages() {
+        // Show PDF pages instead of text
+        this.showPDFViewer();
     }
 
     createBookPages() {
@@ -205,63 +263,295 @@ class TTSReader {
         this.currentPage = 0;
     }
 
-    showBookInterface() {
-        // Create book-like container
+    showPDFViewer() {
+        // Create Speechify-like PDF viewer container
         this.bookContainer = document.createElement('div');
-        this.bookContainer.className = 'book-container';
+        this.bookContainer.className = 'speechify-container';
         this.bookContainer.innerHTML = `
-            <div class="book-header">
-                <h3>📖 PDF Reader</h3>
-                <div class="page-info">
-                    <span id="currentPageDisplay">Page 1 of ${this.pdfPages.length}</span>
+            <div class="reader-header">
+                <div class="reader-controls">
+                    <button id="prevPageBtn" class="btn btn-nav" disabled>←</button>
+                    <span id="currentPageDisplay">Page 1 of ${this.totalPages}</span>
+                    <button id="nextPageBtn" class="btn btn-nav">→</button>
+                </div>
+                <div class="reading-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="readingProgressFill"></div>
+                    </div>
                 </div>
             </div>
-            <div class="book-content">
-                <div class="page-navigation">
-                    <button id="prevPageBtn" class="btn btn-secondary" disabled>← Previous</button>
-                    <button id="nextPageBtn" class="btn btn-secondary">Next →</button>
+            <div class="pdf-reader" id="pdfReader">
+                <div class="page-container" id="pageContainer">
+                    <canvas id="pdfCanvas" class="pdf-canvas"></canvas>
+                    <div class="word-overlay" id="wordOverlay"></div>
                 </div>
-                <div class="page-content" id="pageContent">
-                    <div class="text-highlight" id="textHighlight"></div>
-                    <div class="page-text" id="pageText"></div>
+            </div>
+            <div class="ocr-controls">
+                <div class="ocr-toggle">
+                    <label for="ocrCheckbox">
+                        <input type="checkbox" id="ocrCheckbox"> Enable OCR for scanned PDFs
+                    </label>
                 </div>
+                <div class="ocr-language" id="ocrLanguageGroup" style="display: none;">
+                    <label for="ocrLanguageSelect">OCR Language:</label>
+                    <select id="ocrLanguageSelect">
+                        <option value="eng">English</option>
+                        <option value="spa">Spanish</option>
+                        <option value="fra">French</option>
+                        <option value="deu">German</option>
+                        <option value="ita">Italian</option>
+                        <option value="por">Portuguese</option>
+                        <option value="rus">Russian</option>
+                        <option value="chi_sim">Chinese (Simplified)</option>
+                        <option value="chi_tra">Chinese (Traditional)</option>
+                        <option value="jpn">Japanese</option>
+                        <option value="kor">Korean</option>
+                    </select>
+                </div>
+                <button id="processOCRBtn" class="btn btn-info" style="display: none;">🔍 Process with OCR</button>
             </div>
         `;
         
-        // Replace the text preview with book interface
+        // Replace the text preview with PDF viewer
         const textPreview = document.querySelector('.text-preview');
         textPreview.innerHTML = '';
         textPreview.appendChild(this.bookContainer);
         
-        // Initialize book elements
-        this.pageContainer = document.getElementById('pageContent');
-        this.pageText = document.getElementById('pageText');
-        this.textHighlight = document.getElementById('textHighlight');
+        // Initialize elements
+        this.pdfCanvas = document.getElementById('pdfCanvas');
+        this.pdfContext = this.pdfCanvas.getContext('2d');
+        this.wordOverlay = document.getElementById('wordOverlay');
         this.currentPageDisplay = document.getElementById('currentPageDisplay');
         this.prevPageBtn = document.getElementById('prevPageBtn');
         this.nextPageBtn = document.getElementById('nextPageBtn');
+        this.readingProgressFill = document.getElementById('readingProgressFill');
         
-        // Setup page navigation
+        // Initialize OCR controls
+        this.ocrCheckbox = document.getElementById('ocrCheckbox');
+        this.ocrLanguageGroup = document.getElementById('ocrLanguageGroup');
+        this.ocrLanguageSelect = document.getElementById('ocrLanguageSelect');
+        this.processOCRBtn = document.getElementById('processOCRBtn');
+        
+        // Setup controls
         this.setupPageNavigation();
+        this.setupOCRControls();
         
         // Display first page
-        this.displayCurrentPage();
+        this.renderCurrentPDFPage();
     }
 
     setupPageNavigation() {
         this.prevPageBtn.addEventListener('click', () => {
             if (this.currentPage > 0) {
                 this.currentPage--;
-                this.displayCurrentPage();
+                this.renderCurrentPDFPage();
             }
         });
         
         this.nextPageBtn.addEventListener('click', () => {
-            if (this.currentPage < this.pdfPages.length - 1) {
+            if (this.currentPage < this.totalPages - 1) {
                 this.currentPage++;
-                this.displayCurrentPage();
+                this.renderCurrentPDFPage();
             }
         });
+    }
+
+    setupOCRControls() {
+        // OCR checkbox toggle
+        this.ocrCheckbox.addEventListener('change', (e) => {
+            this.useOCR = e.target.checked;
+            this.ocrLanguageGroup.style.display = this.useOCR ? 'block' : 'none';
+            this.processOCRBtn.style.display = this.useOCR ? 'inline-block' : 'none';
+        });
+
+        // OCR language selection
+        this.ocrLanguageSelect.addEventListener('change', (e) => {
+            this.ocrLanguage = e.target.value;
+        });
+
+        // Process OCR button
+        this.processOCRBtn.addEventListener('click', () => {
+            this.processPDFWithOCR();
+        });
+    }
+
+    async processPDFWithOCR() {
+        if (this.isProcessingOCR) {
+            this.showError('OCR processing already in progress. Please wait...');
+            return;
+        }
+
+        try {
+            this.isProcessingOCR = true;
+            this.processOCRBtn.disabled = true;
+            this.showProgress('Processing PDF with OCR...');
+            
+            // Initialize Tesseract worker
+            if (!this.ocrWorker) {
+                this.updateProgress(10, 'Initializing OCR engine...');
+                this.ocrWorker = await Tesseract.createWorker(this.ocrLanguage);
+                await this.ocrWorker.load();
+                await this.ocrWorker.loadLanguage(this.ocrLanguage);
+                await this.ocrWorker.initialize(this.ocrLanguage);
+            }
+
+            let fullOCRText = '';
+            const totalPages = this.totalPages;
+
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                this.updateProgress((pageNum / totalPages) * 80 + 10, `Processing page ${pageNum} of ${totalPages} with OCR...`);
+                
+                // Render page to canvas
+                const page = await this.pdfDocument.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
+                
+                // Create temporary canvas for OCR
+                const tempCanvas = document.createElement('canvas');
+                const tempContext = tempCanvas.getContext('2d');
+                tempCanvas.width = viewport.width;
+                tempCanvas.height = viewport.height;
+                
+                const renderContext = {
+                    canvasContext: tempContext,
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                
+                // Convert canvas to image data for OCR
+                const imageData = tempContext.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                
+                // Process with OCR
+                const { data: { text } } = await this.ocrWorker.recognize(imageData);
+                fullOCRText += text + '\n\n';
+            }
+
+            // Update the PDF text with OCR results
+            this.pdfText = fullOCRText.trim();
+            this.ocrText = fullOCRText.trim();
+            
+            // Recreate text chunks with OCR text
+            this.createBookPages();
+            
+            this.hideProgress();
+            this.showSuccess('OCR processing completed successfully!');
+            
+        } catch (error) {
+            console.error('OCR processing error:', error);
+            this.showError('Error processing PDF with OCR. Please try again.');
+            this.hideProgress();
+        } finally {
+            this.isProcessingOCR = false;
+            this.processOCRBtn.disabled = false;
+        }
+    }
+
+    async renderCurrentPDFPage() {
+        if (!this.pdfDocument || !this.pdfCanvas || !this.pdfPages[this.currentPage]) return;
+        
+        try {
+            const page = await this.pdfDocument.getPage(this.currentPage + 1);
+            const viewport = page.getViewport({ scale: 1.5 });
+            
+            // Set canvas dimensions
+            this.pdfCanvas.width = viewport.width;
+            this.pdfCanvas.height = viewport.height;
+            
+            // Render PDF page
+            const renderContext = {
+                canvasContext: this.pdfContext,
+                viewport: viewport
+            };
+            
+            await page.render(renderContext).promise;
+            
+            // Update page info
+            this.currentPageDisplay.textContent = `Page ${this.currentPage + 1} of ${this.totalPages}`;
+            
+            // Update navigation buttons
+            this.prevPageBtn.disabled = this.currentPage === 0;
+            this.nextPageBtn.disabled = this.currentPage === this.totalPages - 1;
+            
+            // Create word overlay
+            await this.createWordOverlay();
+            
+        } catch (error) {
+            console.error('Error rendering PDF page:', error);
+            this.showError('Error rendering PDF page. Please try again.');
+        }
+    }
+
+    async createWordOverlay() {
+        if (!this.wordOverlay || !this.pdfPages[this.currentPage]) return;
+        
+        // Clear existing words
+        this.wordOverlay.innerHTML = '';
+        
+        const currentPageData = this.pdfPages[this.currentPage];
+        const canvas = this.pdfCanvas;
+        
+        // Get the viewport to understand the coordinate system
+        const page = await this.pdfDocument.getPage(this.currentPage + 1);
+        const viewport = page.getViewport({ scale: 1.5 });
+        
+        currentPageData.words.forEach(word => {
+            const wordElement = document.createElement('span');
+            wordElement.className = 'word';
+            wordElement.textContent = word.text;
+            wordElement.dataset.wordIndex = word.globalIndex;
+            wordElement.dataset.pageIndex = this.currentPage;
+
+            // Use the PDF's internal coordinates directly, scaled to the canvas size
+            const x = (word.x / viewport.width) * 100;
+            const y = (word.y / viewport.height) * 100;
+            const width = (word.width / viewport.width) * 100;
+            const height = (word.height / viewport.height) * 100;
+
+            wordElement.style.position = 'absolute';
+            wordElement.style.left = `${x}%`;
+            wordElement.style.top = `${y}%`;
+            wordElement.style.width = `${width}%`;
+            wordElement.style.height = `${height}%`;
+            wordElement.style.fontSize = `${height * 0.8}px`;
+            wordElement.style.lineHeight = `${height}px`;
+            wordElement.style.cursor = 'pointer';
+            wordElement.style.userSelect = 'none';
+            wordElement.style.transition = 'background-color 0.2s ease';
+            wordElement.style.display = 'flex';
+            wordElement.style.alignItems = 'center';
+            wordElement.style.justifyContent = 'flex-start';
+            
+            // Add click handler for word selection
+            wordElement.addEventListener('click', () => {
+                this.selectWord(word.globalIndex);
+            });
+            
+            this.wordOverlay.appendChild(wordElement);
+        });
+    }
+
+    selectWord(wordIndex) {
+        // Clear previous selection
+        document.querySelectorAll('.word.selected').forEach(word => {
+            word.classList.remove('selected');
+        });
+        
+        // Select the clicked word
+        const wordElement = document.querySelector(`[data-word-index="${wordIndex}"]`);
+        if (wordElement) {
+            wordElement.classList.add('selected');
+            
+            // Scroll to word if needed
+            wordElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // If audio is playing, jump to this word's timing
+            if (this.audio && this.allWordTimings.length > 0) {
+                const timing = this.allWordTimings[wordIndex];
+                if (timing) {
+                    this.audio.currentTime = timing.timeSeconds;
+                }
+            }
+        }
     }
 
     displayCurrentPage() {
@@ -283,21 +573,21 @@ class TTSReader {
     }
 
     updateTextHighlight() {
-        if (!this.textHighlight || !this.pageText) return;
+        if (!this.textHighlight) return;
         
         // Clear previous highlights
         this.textHighlight.innerHTML = '';
         
-        if (this.isReading && this.currentReadingPosition > 0) {
-            // Create highlighted text for current reading position
-            const text = this.pageText.textContent;
+        if (this.isReading && this.currentHighlightPosition > 0) {
+            // Create highlighted text overlay for current reading position
+            const text = this.pdfText;
             const words = text.split(/(\s+)/);
             let currentPos = 0;
             let highlightedWords = [];
             
             for (let i = 0; i < words.length; i++) {
                 const word = words[i];
-                if (currentPos < this.currentReadingPosition) {
+                if (currentPos < this.currentHighlightPosition) {
                     highlightedWords.push(`<span class="highlighted">${word}</span>`);
                 } else {
                     highlightedWords.push(word);
@@ -446,6 +736,11 @@ class TTSReader {
                 const audioUrl = URL.createObjectURL(audioBlob);
                 this.audioChunks.push(audioUrl);
                 
+                // Store timing data if available
+                if (response.timepoints && response.timepoints.length > 0) {
+                    this.allWordTimings.push(...response.timepoints);
+                }
+                
                 this.currentChunkIndex++;
                 
                 // Process next chunk after a short delay to prevent overwhelming the API
@@ -486,19 +781,15 @@ class TTSReader {
                 throw new Error('No audio chunks to combine');
             }
 
-            if (this.audioChunks.length === 1) {
-                // Single chunk, no need to combine
-                this.audio = new Audio(this.audioChunks[0]);
-            } else {
-                // Multiple chunks - create a playlist system
-                this.audio = new Audio(this.audioChunks[0]);
-                this.setupChunkedAudioEvents();
-            }
+            // The audio element will now be managed by our queue system
+            this.audio = new Audio();
+            this.setupAudioEvents(); // Standard events like play/pause
             
-            this.setupAudioEvents();
+            this.currentChunkIndex = 0; // Reset index for playback
+            this.playNextChunk(); // Start playing the first chunk
+
             this.playBtn.disabled = false;
             this.stopBtn.disabled = false;
-            
             this.hideProgress();
             this.showSuccess(`Audio generated successfully! (${this.audioChunks.length} chunks)`);
             
@@ -510,25 +801,27 @@ class TTSReader {
             this.synthesizeBtn.disabled = false;
         }
     }
+    
+    playNextChunk() {
+        if (this.currentChunkIndex < this.audioChunks.length) {
+            // Set the source to the current chunk and play
+            this.audio.src = this.audioChunks[this.currentChunkIndex];
+            this.audio.play();
 
-    setupChunkedAudioEvents() {
-        let currentChunkIndex = 0;
-        
-        this.audio.addEventListener('ended', () => {
-            currentChunkIndex++;
-            
-            if (currentChunkIndex < this.audioChunks.length) {
-                // Play next chunk
-                this.audio.src = this.audioChunks[currentChunkIndex];
-                this.audio.play();
-            } else {
-                // All chunks played, reset
-                this.isPlaying = false;
-                this.isPaused = false;
-                this.playBtn.disabled = false;
-                this.pauseBtn.disabled = true;
-            }
-        });
+            // When this chunk ends, automatically play the next one
+            this.audio.onended = () => {
+                this.currentChunkIndex++;
+                this.playNextChunk();
+            };
+        } else {
+            // All chunks have finished playing
+            console.log("Finished playback of all chunks.");
+            this.isPlaying = false;
+            this.isPaused = false;
+            this.playBtn.disabled = false;
+            this.pauseBtn.disabled = true;
+            this.audio.onended = null; // Clean up listener
+        }
     }
 
     async callTTSService(text = null) {
@@ -622,23 +915,120 @@ class TTSReader {
         this.audio.addEventListener('play', () => {
             this.isPlaying = true;
             this.isPaused = false;
+            this.isReading = true;
             this.playBtn.disabled = true;
             this.pauseBtn.disabled = false;
+            this.startHighlighting();
         });
 
         this.audio.addEventListener('pause', () => {
             this.isPlaying = false;
             this.isPaused = true;
+            this.isReading = false;
             this.playBtn.disabled = false;
             this.pauseBtn.disabled = true;
+            this.stopHighlighting();
         });
 
         this.audio.addEventListener('ended', () => {
             this.isPlaying = false;
             this.isPaused = false;
+            this.isReading = false;
             this.playBtn.disabled = false;
             this.pauseBtn.disabled = true;
+            this.stopHighlighting();
         });
+
+        // Add time update listener for highlighting
+        this.audio.addEventListener('timeupdate', () => {
+            if (this.isReading) {
+                this.updateHighlighting();
+            }
+        });
+    }
+
+    startHighlighting() {
+        // Calculate approximate reading speed (words per second)
+        const wordsPerSecond = 2.5; // Adjust based on speaking rate
+        this.highlightInterval = setInterval(() => {
+            if (this.isReading && this.audio) {
+                this.updateHighlighting();
+            }
+        }, 200); // Update every 200ms for smooth highlighting
+    }
+
+    stopHighlighting() {
+        if (this.highlightInterval) {
+            clearInterval(this.highlightInterval);
+            this.highlightInterval = null;
+        }
+        this.currentHighlightPosition = 0;
+        this.updateTextHighlight();
+    }
+
+    updateHighlighting() {
+        if (!this.audio || !this.isReading) return;
+        
+        const currentTime = this.audio.currentTime;
+        
+        // Use precise timing data if available
+        if (this.allWordTimings.length > 0) {
+            this.highlightWordWithTiming(currentTime);
+        } else {
+            // Fallback to approximate highlighting
+            const totalTime = this.audio.duration;
+            if (totalTime > 0) {
+                const progress = currentTime / totalTime;
+                const wordIndex = Math.floor(progress * this.allWords.length);
+                this.highlightWord(wordIndex);
+                this.updateReadingProgress(progress);
+            }
+        }
+    }
+
+    highlightWordWithTiming(currentTime) {
+        // Find the current word based on timing data
+        let currentWordIndex = 0;
+        
+        for (let i = 0; i < this.allWordTimings.length; i++) {
+            const timing = this.allWordTimings[i];
+            if (timing.timeSeconds <= currentTime) {
+                currentWordIndex = i;
+            } else {
+                break;
+            }
+        }
+        
+        this.highlightWord(currentWordIndex);
+        
+        // Update progress based on timing
+        const totalTime = this.audio.duration;
+        if (totalTime > 0) {
+            const progress = currentTime / totalTime;
+            this.updateReadingProgress(progress);
+        }
+    }
+
+    highlightWord(wordIndex) {
+        // Clear previous highlights
+        document.querySelectorAll('.word.highlighted').forEach(word => {
+            word.classList.remove('highlighted');
+        });
+        
+        // Highlight current word
+        const wordElement = document.querySelector(`[data-word-index="${wordIndex}"]`);
+        if (wordElement) {
+            wordElement.classList.add('highlighted');
+            
+            // Scroll to highlighted word
+            wordElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    updateReadingProgress(progress) {
+        if (this.readingProgressFill) {
+            this.readingProgressFill.style.width = `${progress * 100}%`;
+        }
     }
 
     playAudio() {
@@ -674,6 +1064,17 @@ class TTSReader {
         this.audioChunks = [];
         this.textChunks = [];
         this.currentChunkIndex = 0;
+    }
+
+    async cleanupOCRWorker() {
+        if (this.ocrWorker) {
+            try {
+                await this.ocrWorker.terminate();
+                this.ocrWorker = null;
+            } catch (error) {
+                console.warn('Error terminating OCR worker:', error);
+            }
+        }
     }
 
     updateSpeedDisplay() {

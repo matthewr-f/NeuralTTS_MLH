@@ -61,7 +61,8 @@ def synthesize():
             "audioConfig": {
                 "audioEncoding": "LINEAR16",
                 "pitch": pitch,
-                "speakingRate": speaking_rate
+                "speakingRate": speaking_rate,
+                "enableTimePointing": ["SSML"]  # Request word timings
             },
             "input": {
                 "text": text
@@ -85,6 +86,7 @@ def synthesize():
             result = response.json()
             return jsonify({
                 'audioContent': result.get('audioContent'),
+                'timepoints': result.get('timepoints', []),
                 'success': True
             })
         else:
