@@ -1,35 +1,44 @@
-import React from 'react';
-// import 'TTS/src/css/navbar.css';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from "./components/Navbar.tsx";
+import Navbar from './components/Navbar.tsx';
+import TTSReader from './TTSReader.tsx';
 import './css/navbar.css';
 
-function Page({ color }: { color: string }) {
-  return (
-    <div
-      style={{
-        backgroundColor: color,
-        width: '100vw',
-        height: '100vh',
-        paddingTop: 'var(--navbar-height)',
-      }}
-    />
-  );
-}
+export default function App() {
+  const fullText = "What are we reading tonight?";
+  const [displayed, setDisplayed] = useState("");
 
-function App() {
+  useEffect(() => {
+    let i = 0;
+    const timer = setInterval(() => {
+      setDisplayed(fullText.slice(0, i + 1));
+      i++;
+      if (i === fullText.length) clearInterval(timer);
+    }, 100);
+    return () => clearInterval(timer);
+  }, []);
+  
+
   return (
     <Router>
       <Navbar />
-      <Routes>
-        <Route path="/" element={<Page color="#4281A4" />} />
-        <Route path="/page2" element={<Page color="#48A9A6" />} />
-        <Route path="/page3" element={<Page color="#E4DFDA" />} />
-        <Route path="/page4" element={<Page color="#D4B483" />} />
-        <Route path="/page5" element={<Page color="#C1666B" />} />
-      </Routes>
+      <div className="homepage-container">
+        <header>
+          <h1>{displayed}</h1>
+        </header>
+        <main>
+          <Routes>
+            <Route path="/" element={<TTSReader />} />
+            <Route path="/page2" element={<TTSReader />} />
+            <Route path="/page3" element={<TTSReader />} />
+            <Route path="/page4" element={<TTSReader />} />
+            <Route path="/page5" element={<TTSReader />} />
+          </Routes>
+        </main>
+        <footer>
+          <p>Powered by Google Cloud TTS | Built for Sunhacks 2025</p>
+        </footer>
+      </div>
     </Router>
   );
 }
-
-export default App;
