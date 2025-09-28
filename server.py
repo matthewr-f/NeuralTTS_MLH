@@ -74,7 +74,6 @@ def synthesize():
             },
             "voice": {
                 "languageCode": language_code,
-                "modelName": model_name,
                 "name": voice_name
             }
         }

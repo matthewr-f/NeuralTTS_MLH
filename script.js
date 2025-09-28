@@ -717,6 +717,13 @@ class TTSReader {
     async processNextChunk() {
         if (this.currentChunkIndex >= this.textChunks.length) {
             // All chunks processed, combine audio
+            if (this.audioChunks.length === 0) {
+                this.showError('No audio could be generated. Please check your API key and try again.');
+                this.hideProgress();
+                this.isProcessingChunks = false;
+                this.synthesizeBtn.disabled = false;
+                return;
+            }
             await this.combineAudioChunks();
             return;
         }
@@ -754,9 +761,27 @@ class TTSReader {
         } catch (error) {
             console.error(`Error processing chunk ${this.currentChunkIndex + 1}:`, error);
             
-            // If it's a critical error (API key, quota), stop processing
-            if (error.message.includes('API key') || error.message.includes('quota') || error.message.includes('invalid')) {
-                this.showError(`Critical error: ${error.message}. Stopping audio generation.`);
+            // If it's a critical error (API key, quota, permissions), stop processing
+            if (error.message.includes('API key') || 
+                error.message.includes('quota') || 
+                error.message.includes('invalid') ||
+                error.message.includes('PERMISSION_DENIED') ||
+                error.message.includes('SERVICE_DISABLED') ||
+                error.message.includes('Vertex AI API') ||
+                error.message.includes('403')) {
+                
+                let userFriendlyMessage = 'Critical error: ';
+                if (error.message.includes('Vertex AI API')) {
+                    userFriendlyMessage += 'The Vertex AI API is not enabled. Please enable it in your Google Cloud Console or use a different voice model.';
+                } else if (error.message.includes('API key')) {
+                    userFriendlyMessage += 'Invalid API key. Please check your Google Cloud API key.';
+                } else if (error.message.includes('quota')) {
+                    userFriendlyMessage += 'API quota exceeded. Please try again later.';
+                } else {
+                    userFriendlyMessage += error.message;
+                }
+                
+                this.showError(userFriendlyMessage);
                 this.hideProgress();
                 this.isProcessingChunks = false;
                 this.synthesizeBtn.disabled = false;
@@ -829,7 +854,7 @@ class TTSReader {
             text: textToSynthesize,
             voice: this.voiceSelect.value,
             languageCode: "en-US",
-            modelName: "gemini-2.5-pro-preview-tts",
+            modelName: "standard", // Use standard TTS model instead of Gemini
             pitch: parseInt(this.pitchRange.value),
             speakingRate: parseFloat(this.speedRange.value)
         };
