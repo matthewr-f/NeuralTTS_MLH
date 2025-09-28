@@ -43,6 +43,9 @@ class TTSReader {
         this.setupEventListeners();
         this.setupPDFJS();
         this.populateVoiceList();
+        
+        // Expose debug function globally
+        window.debugWordPositioning = () => this.debugWordPositioning();
     }
 
     initializeElements() {
@@ -222,15 +225,26 @@ class TTSReader {
         
         textContent.items.forEach((item, index) => {
             if (item.str.trim()) {
+                // Use the transform matrix for more accurate positioning
+                const transform = item.transform;
+                const x = transform[4];
+                const y = viewport.height - transform[5]; // Flip Y coordinate
+                
+                // Calculate width and height more accurately
+                const width = item.width;
+                const height = item.height;
+                
                 const word = {
                     text: item.str,
-                    x: item.transform[4],
-                    y: viewport.height - item.transform[5], // Flip Y coordinate
-                    width: item.width,
-                    height: item.height,
+                    x: x,
+                    y: y,
+                    width: width,
+                    height: height,
                     pageNum: pageNum,
                     wordIndex: words.length,
-                    globalIndex: this.allWords.length + words.length
+                    globalIndex: this.allWords.length + words.length,
+                    // Store original transform for debugging
+                    transform: transform
                 };
                 words.push(word);
                 pageText += item.str + ' ';
@@ -508,13 +522,13 @@ class TTSReader {
             
             wordElement.dataset.wordIndex = word.globalIndex;
 
-            // Translate PDF coordinates to CSS pixels
-            // pdf.js gives coordinates from the bottom-left, CSS uses top-left
+            // Use the stored coordinates directly - they should already be correct
             const x = word.x;
-            const y = word.y; // Already flipped in extractTextWithPositioning
+            const y = word.y;
             const width = word.width;
             const height = word.height;
 
+            // Apply positioning with sub-pixel precision
             wordElement.style.left = `${x}px`;
             wordElement.style.top = `${y}px`;
             wordElement.style.width = `${width}px`;
@@ -540,8 +554,15 @@ class TTSReader {
         if (wordElement) {
             wordElement.classList.add('selected');
             
-            // Scroll to word if needed
-            wordElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Only scroll if the word is not visible (optional user control)
+            const rect = wordElement.getBoundingClientRect();
+            const container = document.querySelector('.pdf-reader');
+            const containerRect = container.getBoundingClientRect();
+            
+            // Only scroll if the word is completely outside the visible area
+            if (rect.bottom < containerRect.top || rect.top > containerRect.bottom) {
+                wordElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             
             // If audio is playing, jump to this word's timing
             if (this.audio && this.allWordTimings.length > 0) {
@@ -1044,8 +1065,15 @@ class TTSReader {
         if (wordElement) {
             wordElement.classList.add('highlighted');
             
-            // Scroll to highlighted word
-            wordElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Optional: Only scroll if the word is not visible (but don't force it)
+            const rect = wordElement.getBoundingClientRect();
+            const container = document.querySelector('.pdf-reader');
+            const containerRect = container.getBoundingClientRect();
+            
+            // Only scroll if the word is completely outside the visible area
+            if (rect.bottom < containerRect.top || rect.top > containerRect.bottom) {
+                wordElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
     }
 
@@ -1053,6 +1081,78 @@ class TTSReader {
         if (this.readingProgressFill) {
             this.readingProgressFill.style.width = `${progress * 100}%`;
         }
+    }
+
+    // Debug function to visualize word positioning
+    debugWordPositioning() {
+        if (!this.pdfPages || this.pdfPages.length === 0) {
+            console.log('No PDF pages loaded');
+            return;
+        }
+
+        const currentPageData = this.pdfPages[this.currentPage];
+        console.log(`Debugging page ${this.currentPage + 1}:`);
+        console.log(`Canvas size: ${this.pdfCanvas.width}x${this.pdfCanvas.height}`);
+        console.log(`Overlay size: ${this.wordOverlay.style.width}x${this.wordOverlay.style.height}`);
+        
+        // Show first 5 words for debugging
+        currentPageData.words.slice(0, 5).forEach((word, index) => {
+            console.log(`Word ${index}: "${word.text}" at (${word.x}, ${word.y}) size ${word.width}x${word.height}`);
+        });
+
+        // Add visual debug overlay
+        this.addDebugOverlay();
+    }
+
+    addDebugOverlay() {
+        // Remove existing debug overlay
+        const existingDebug = document.querySelector('.debug-overlay');
+        if (existingDebug) {
+            existingDebug.remove();
+        }
+
+        // Create debug overlay
+        const debugOverlay = document.createElement('div');
+        debugOverlay.className = 'debug-overlay';
+        debugOverlay.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        `;
+
+        const currentPageData = this.pdfPages[this.currentPage];
+        currentPageData.words.slice(0, 10).forEach((word, index) => {
+            const debugBox = document.createElement('div');
+            debugBox.style.cssText = `
+                position: absolute;
+                left: ${word.x}px;
+                top: ${word.y}px;
+                width: ${word.width}px;
+                height: ${word.height}px;
+                border: 1px solid red;
+                background: rgba(255, 0, 0, 0.1);
+                font-size: 10px;
+                color: red;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            debugBox.textContent = word.text;
+            debugOverlay.appendChild(debugBox);
+        });
+
+        this.wordOverlay.appendChild(debugOverlay);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (debugOverlay.parentNode) {
+                debugOverlay.remove();
+            }
+        }, 5000);
     }
 
     playAudio() {

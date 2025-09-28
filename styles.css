@@ -529,7 +529,11 @@ footer {
     border-radius: 3px;
     
     /* This is the key: make the text itself invisible */
-    color: transparent; 
+    color: transparent;
+    
+    /* Ensure precise positioning */
+    box-sizing: border-box;
+    transform-origin: top left;
 }
 
 .word:hover {
